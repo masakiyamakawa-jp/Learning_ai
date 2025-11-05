@@ -7,6 +7,9 @@ function Home() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({ name: "", topic: "" });
 
+    // add_line: 1
+    const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
+
     const validate = () => {
         const next = { name: "", topic: "" };
         if (!name.trim()) next.name = "名前を入力してください。";
@@ -15,25 +18,48 @@ function Home() {
         return !next.name && !next.topic;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
         setLoading(true);
+        setResult("");
 
-        // 実際のAPI連携がある場合はここで fetch/axios を使用。
-        // ここではデモとして即時に結果を生成します。
-        const message =
-            `【相談を受け付けました】\n` +
-            `お名前：${name}\n` +
-            `ご相談：${topic}\n\n` +
-            `■ 初期アドバイス（例）\n` +
-            `1) 事実・課題・理想を分けて整理しましょう。\n` +
-            `2) すぐにできる次の一手を1つ決めましょう。\n` +
-            `3) 必要なら追加情報（期限・関係者・制約）を教えてください。`;
-        setResult(message);
-        setLoading(false);
+        // add_line***start
+        try {
+            // 例：GET /question にアクセス（必要ならクエリを付与）
+            const url = new URL(`${API_BASE}/question`);
+            url.searchParams.set("name", name);
+            url.searchParams.set("topic", topic);
+
+            const res = await fetch(url.toString(), {
+                method: "GET",
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            // バックエンドは { "message": "Hello World!!" } を返す想定
+            const message =
+                `【API 実行結果】\n` +
+                `お名前：${name}\n` +
+                `ご相談：${topic}\n\n` +
+                `■ サーバからのメッセージ\n` +
+                `${data?.message ?? "(message フィールドなし)"}`;
+
+            setResult(message);
+        } catch (err) {
+            setResult(
+                `【エラー】サーバーへのリクエストに失敗しました。\n` +
+                `詳細: ${err?.message ?? err}`
+            );
+        } finally {
+            setLoading(false);
+        }
     };
+    // add_line***fine
 
     const handleReset = () => {
         setName("");
@@ -42,6 +68,7 @@ function Home() {
         setErrors({ name: "", topic: "" });
     };
 
+    // 以降の JSX は既存を流用（省略可）。submit ボタンや表示はそのままです。
     return (
         <main style={styles.wrap}>
             <h1 style={styles.title}>相談フォーム</h1>
