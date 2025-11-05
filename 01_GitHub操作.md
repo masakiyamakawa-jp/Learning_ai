@@ -8,5 +8,8 @@
 - リモートに反映
     git push origin main
 - コミット
-    git add .
+    git add .   (新規追加・変更(削除は含まない)のステージング)
+    git add -A  (削除も含めたステージング)
     git commit -m "chore: first commit"
+
+

@@ -1,7 +1,6 @@
 // src/Home.js
 import { useState } from "react";
-
-export default function Home() {
+function Home() {
     const [name, setName] = useState("");
     const [topic, setTopic] = useState("");
     const [result, setResult] = useState("");
@@ -173,3 +172,6 @@ const styles = {
     },
     error: { color: "#e11d48", fontSize: 12 },
 };
+
+
+export default Home;
