@@ -1,5 +1,7 @@
 // src/Home.js
 import { useState } from "react";
+
+
 function Home() {
     const [name, setName] = useState("");
     const [topic, setTopic] = useState("");
@@ -7,7 +9,9 @@ function Home() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({ name: "", topic: "" });
 
+
     // add_line: 1
+    // バックエンドのベースURL
     const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
 
     const validate = () => {
@@ -32,34 +36,27 @@ function Home() {
             url.searchParams.set("name", name);
             url.searchParams.set("topic", topic);
 
-            const res = await fetch(url.toString(), {
-                method: "GET",
+            // POST /question に JSON で送信
+            const res = await fetch(`${API_BASE}/question`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, topic }),
             });
 
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
             }
 
-            const data = await res.json();
-            // バックエンドは { "message": "Hello World!!" } を返す想定
-            const message =
-                `【API 実行結果】\n` +
-                `お名前：${name}\n` +
-                `ご相談：${topic}\n\n` +
-                `■ サーバからのメッセージ\n` +
-                `${data?.message ?? "(message フィールドなし)"}`;
-
-            setResult(message);
+            const data = await res.json(); // { message: "～～さん、ようこそ！！質問内容は～～ですね！！" }
+            setResult(data?.message ?? "(message フィールドなし)");
         } catch (err) {
             setResult(
-                `【エラー】サーバーへのリクエストに失敗しました。\n` +
-                `詳細: ${err?.message ?? err}`
+                `【エラー】サーバーへのリクエストに失敗しました。詳細: ${err?.message ?? err}`
             );
         } finally {
             setLoading(false);
         }
     };
-    // add_line***fine
 
     const handleReset = () => {
         setName("");
