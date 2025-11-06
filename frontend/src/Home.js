@@ -1,8 +1,10 @@
 // src/Home.js
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 
 function Home() {
+    const navigate = useNavigate();
     const [name, setName] = useState("");
     const [topic, setTopic] = useState("");
     const [result, setResult] = useState("");
@@ -10,9 +12,16 @@ function Home() {
     const [errors, setErrors] = useState({ name: "", topic: "" });
 
 
-    // add_line: 1
     // バックエンドのベースURL
     const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
+
+    // === 認証チェック（未ログインなら /login へ）===
+    useEffect(() => {
+        const ok = !!localStorage.getItem("auth_ok");
+        if (!ok) {
+            navigate("/login", { replace: true });
+        }
+    }, [navigate]);
 
     const validate = () => {
         const next = { name: "", topic: "" };
@@ -29,12 +38,11 @@ function Home() {
         setLoading(true);
         setResult("");
 
-        // add_line***start
         try {
-            // 例：GET /question にアクセス（必要ならクエリを付与）
-            const url = new URL(`${API_BASE}/question`);
-            url.searchParams.set("name", name);
-            url.searchParams.set("topic", topic);
+            // POST /question に JSON で送信
+            // const url = new URL(`${API_BASE}/question`);
+            // url.searchParams.set("name", name);
+            // url.searchParams.set("topic", topic);
 
             // POST /question に JSON で送信
             const res = await fetch(`${API_BASE}/question`, {
@@ -44,10 +52,11 @@ function Home() {
             });
 
             if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
+                const detail = await res.json().catch(() => ({}));
+                throw new Error(detail?.detail || `HTTP ${res.status}`);
             }
 
-            const data = await res.json(); // { message: "～～さん、ようこそ！！質問内容は～～ですね！！" }
+            const data = await res.json(); // { message: "..." }
             setResult(data?.message ?? "(message フィールドなし)");
         } catch (err) {
             setResult(
@@ -65,10 +74,22 @@ function Home() {
         setErrors({ name: "", topic: "" });
     };
 
-    // 以降の JSX は既存を流用（省略可）。submit ボタンや表示はそのままです。
+
     return (
         <main style={styles.wrap}>
-            <h1 style={styles.title}>相談フォーム</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h1 style={styles.title}>相談フォーム</h1>
+                {/* ログアウト（ローカルストレージの簡易トークンを削除） */}
+                <button
+                    onClick={() => {
+                        localStorage.removeItem("auth_ok");
+                        navigate("/login", { replace: true });
+                    }}
+                    style={{ ...styles.button, background: "#e2e8f0", color: "#0f172a" }}
+                >
+                    ログアウト
+                </button>
+            </div>
 
             <form onSubmit={handleSubmit} style={styles.form}>
                 {/* 名前フォーム */}

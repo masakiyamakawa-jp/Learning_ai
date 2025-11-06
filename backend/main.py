@@ -1,6 +1,6 @@
 # main.py
 import os
-from typing import Optional
+from typing import Optional, List, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +21,7 @@ client = OpenAI()          # OPENAI_API_KEY を自動参照）
 app = FastAPI()
 
 
-# CORS (開発用。必要に応じて許可ドメインを絞ってください)
+# CORS: 開発用
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -34,7 +34,24 @@ app.add_middleware(
 )
 
 
-# === スキーマ ===
+# ====== 認証用ダミーユーザ ======
+USERS: List[Dict[str, str]] = [
+    {"id": "user1", "pass": "pass1"},
+    {"id": "alice", "pass": "wonderland"},
+    {"id": "taro", "pass": "yamada123"},
+]
+
+
+# ====== スキーマ群 ======
+class LoginIn(BaseModel):
+    user_id: str
+    password: str
+
+
+class LoginOut(BaseModel):
+    ok: bool
+
+
 class QuestionIn(BaseModel):
     name: Optional[str] = None
     topic: str
@@ -46,13 +63,28 @@ class QuestionOut(BaseModel):
 
 @app.get("/health")
 def health():
-    # キーの存在チェック（値は返さない）
+    # キーの存在チェック
     ok = bool(os.getenv("OPENAI_API_KEY"))
     return {"status": "ok", "openai_key": ok}
 
 
-# ***add_line***
-# 新エンドポイント: POST /question
+# ====== 認証API ======
+@app.post("/auth", response_model=LoginOut)
+def auth(payload: LoginIn):
+    uid = (payload.user_id or "").strip()
+    pw = (payload.password or "").strip()
+    if not uid or not pw:
+        raise HTTPException(status_code=400, detail="user_id と password は必須です。")
+
+    hit = next((u for u in USERS if u["id"] == uid and u["pass"] == pw), None)
+    if not hit:
+        # 認証失敗
+        raise HTTPException(status_code=401, detail="ID またはパスワードが違います。")
+    # 認証成功
+    return {"ok": True}
+
+
+# ====== 質問システムAPI ======
 @app.post("/question", response_model=QuestionOut)
 def post_question(payload: QuestionIn):
     """
@@ -62,7 +94,7 @@ def post_question(payload: QuestionIn):
     if not payload.topic or not payload.topic.strip():
         raise HTTPException(status_code=400, detail="topic は必須です。")
 
-    # プロンプト（日本語で丁寧に回答する指示）
+    # プロンプトスキーマ
     user_name = payload.name or "ユーザー"
     prompt = (
         f"{user_name}さんからの相談:\n"
