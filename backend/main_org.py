@@ -1,39 +1,31 @@
 # main.py
-import os, json
-from pathlib import Path
+import os
 from typing import Optional, List, Dict
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
-# .envの設定をPythonに読み込む
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except Exception:
     pass
+from openai import OpenAI
 
 
-# 設定ファイルの読み込み
-CONFIG_PATH = Path(__file__).parent / "config" / "config.json"
-try:
-    with CONFIG_PATH.open(encoding="utf-8") as f:
-        CONFIG = json.load(f)
-except FileNotFoundError:
-    raise RuntimeError(f"設定ファイルが見つかりません: {CONFIG_PATH}")
-except json.JSONDecodeError as e:
-    raise RuntimeError(f"設定ファイルのJSONが不正です: {e}")
+client = OpenAI()          # OPENAI_API_KEY を自動参照）
 
-
-client = OpenAI()           # OPENAI_API_KEY を自動参照）
-
-app = FastAPI()             # FastAPIインスタンスを生成
+# FastAPIインスタンスを生成
+app = FastAPI()
 
 
 # CORS: 開発用(本番："https://95n3ic3jzc.ap-northeast-1.awsapprunner.com")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CONFIG.get("cors", {}).get("origins", []),
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,7 +33,11 @@ app.add_middleware(
 
 
 # ====== 認証用ダミーユーザ ======
-USERS: List[Dict[str, str]] = CONFIG.get("users", [])
+USERS: List[Dict[str, str]] = [
+    {"id": "user1", "pass": "pass1"},
+    {"id": "alice", "pass": "wonderland"},
+    {"id": "taro", "pass": "yamada123"},
+]
 
 
 # ====== スキーマ群 ======
@@ -125,6 +121,15 @@ def post_question(payload: QuestionIn):
 # pipenv run uvicorn main:app --reload
 if __name__ == "__main__":
     import uvicorn
-    host = CONFIG.get("server", {}).get("host", "127.0.0.1")
-    port = CONFIG.get("server", {}).get("port", 8000)
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+    # Chat Completions
+    """
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+    answer = completion.choices[0].message.content
+    return {"message": answer}
+    """

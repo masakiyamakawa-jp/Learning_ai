@@ -14,8 +14,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# アプリ本体
+# 本体とconfigをコピー
 COPY main.py .
+COPY config/config.json ./config/
 
 # uvicorn で FastAPI を起動
 EXPOSE 8000

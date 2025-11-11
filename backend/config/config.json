@@ -1,0 +1,30 @@
+{
+  "openai": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "cors": {
+    "origins": [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000"
+    ]
+  },
+  "users": [
+    {
+      "id": "user1",
+      "pass": "pass1"
+    },
+    {
+      "id": "alice",
+      "pass": "wonderland"
+    },
+    {
+      "id": "taro",
+      "pass": "yamada123"
+    }
+  ]
+}
